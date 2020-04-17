@@ -1,28 +1,19 @@
-const connection = require('../utility/database'); //connection to mysql database 
+const sequelize = require('../utility/database'); //ORM sequelize
 
-module.exports = class Category {
-    constructor(name, description) {
-        this.name = name;
-        this.description = description;
-    }
+const Sequelize = require('sequelize');
 
-    saveCategory() {
-        return connection.execute('INSERT INTO categories (name, description) VALUES (?, ?)', [this.name, this.description]);
+const Category = sequelize.define('category', {
+    id: {
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+    },
+    name: Sequelize.STRING,
+    description: {
+        type: Sequelize.STRING,
+        allowNull: true
     }
+});
 
-    static getAll() {
-        return connection.execute('SELECT * FROM categories');
-    }
-
-    static getById(id) {
-        return connection.execute('SELECT * FROM categories WHERE id=?', [id]);
-    }
-
-    static Update(category) {
-        return connection.execute('UPDATE products SET categories.name=?, categories.descripton=? WHERE categories.id', [category.name, category.description, category.id]);
-    }
-
-    static DeleteById(id) {
-        return connection.execute('DELETE FROM categories WHERE id=?', [id]);
-    }
-}
+module.exports = Category;
