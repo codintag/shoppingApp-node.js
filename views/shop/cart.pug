@@ -23,16 +23,16 @@ block content
                                 img(src=`/img/${product.imageUrl}` width='80')
                             td  #{product.name}
                             td  #{product.price} €
-                            td  #{product.cartItem.quantity} 
+                            td  #{product.quantity} 
                             td 
                                 form(action='/delete-cartitem' method='POST').text-center
-                                    input(type='hidden' name='productid' value=`${product.id}`)
+                                    input(type='hidden' name='productid' value=`${product._id}`)
                                     button(type='submit').btn.btn-danger.btn-sm Delete
                 tfoot
                     td(colspan="2").text-right.font-weight-bold Total price : 
                         - var total = 0;
                         each product in products
-                            - total += (product.price * product.cartItem.quantity)
+                            - total += (product.price * product.quantity)
                     td(colspan="3").font-weight-bold #{total} €
             .text-center
                 a(href="/").btn.btn-primary Continue your purchases
