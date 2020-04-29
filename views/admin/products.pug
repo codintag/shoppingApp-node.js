@@ -14,6 +14,7 @@ block content
                         th(style="width:100px;") image
                         th Product Name
                         th(style="width:150px;")  price
+                        th Product added by 
                         th(style="width:133px;") 
                 tbody
                     each product in products
@@ -22,6 +23,7 @@ block content
                                 img(src=`/img/${product.imageUrl}` width='80')
                             td  #{product.name}
                             td  #{product.price} €
+                            td  #{product.userId.name}
                             td 
                                 a.btn.btn-primary.float-left.btn-sm.mr-2(href=`/admin/products/${product._id}`) Edit
 

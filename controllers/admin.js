@@ -2,7 +2,9 @@ const Product = require('../models/Product');
 const Category = require('../models/Category');
 
 exports.getProducts = (req, res, next) => {
-    Product.findAll()
+    Product.find()
+        .populate('userId', 'name -_id')
+        .select('name price imageUrl userId')
         .then(products => {
             res.render('admin/products',
                 {
@@ -16,19 +18,11 @@ exports.getProducts = (req, res, next) => {
 }
 
 exports.getAddProduct = (req, res, next) => {
-
-    Category.findAll()
-        .then(categories => {
-            res.render('admin/add-product',
-                {
-                    title: 'New Product',
-                    path: '/admin/add-product',
-                    categories: categories
-                });
-        })
-        .catch(err => console.log(err));
-
-
+    res.render('admin/add-product',
+        {
+            title: 'New Product',
+            path: '/admin/add-product'
+        });
 }
 
 
@@ -39,10 +33,16 @@ exports.postAddProduct = (req, res, next) => {
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
 
-    const product = new Product(name, price, description, imageUrl, null, null, req.user._id);
+    const product = new Product({
+        name: name,
+        price: price,
+        imageUrl: imageUrl,
+        description: description,
+        userId: req.user
+    });
 
 
-    product.save().then(result => {
+    product.save().then(() => {
         res.redirect('/admin/products');
     })
         .catch(err => console.log(err))
@@ -52,24 +52,28 @@ exports.postAddProduct = (req, res, next) => {
 exports.getEditProduct = (req, res, next) => {
 
     Product.findById(req.params.productid)
+        //.populate('categories')
         .then(product => {
+            return product;
+        }).then(product => {
 
-            Category.findAll()
+            Category.find()
                 .then(categories => {
 
                     categories = categories.map(category => {
 
-                        if (product.categories) {
-
+                        if (product.categories) (
                             product.categories.find(item => {
-                                if (item == category._id) {
-                                    category.selected = true
+                                if (item.toString() === category._id.toString()) {
+                                    category.selected = true;
                                 }
                             })
-                        }
+                        )
 
                         return category;
+
                     });
+
 
                     res.render('admin/edit-product',
                         {
@@ -78,7 +82,7 @@ exports.getEditProduct = (req, res, next) => {
                             product: product,
                             categories: categories
                         });
-                });
+                })
         })
         .catch(err => console.log(err));
 }
@@ -90,21 +94,28 @@ exports.postEditProduct = (req, res, next) => {
     const price = req.body.price;
     const imageUrl = req.body.imageUrl;
     const description = req.body.description;
-    const categories = req.body.categoryids;
+    const ids = req.body.categoryids;
 
-    const product = new Product(name, price, description, imageUrl, categories, id, req.user._id);
-
-    product.save()
-        .then(result => {
+    Product.update({ _id: id }, {
+        $set: {
+            name: name,
+            price: price,
+            imageUrl: imageUrl,
+            description: description,
+            categories: ids
+        }
+    })
+        .then(() => {
             res.redirect('/admin/products?action=edit');
         })
         .catch(err => console.log(err));
+
 }
 
 exports.postDeleteProduct = (req, res, next) => {
     const id = req.body.productid;
 
-    Product.deleteById(id)
+    Product.findByIdAndRemove(id)
         .then(() => {
             console.log('The product has been deleted');
             res.redirect('/admin/products?action=delete');
@@ -124,10 +135,13 @@ exports.postAddCategory = (req, res, next) => {
     const name = req.body.name;
     const description = req.body.description;
 
-    const category = new Category(name, description);
+    const category = new Category({
+        name: name,
+        description: description
+    });
+
     category.save()
         .then(result => {
-            console.log(result);
             res.redirect('/admin/categories?action=create');
         })
         .catch(err => console.log(err))
@@ -135,7 +149,7 @@ exports.postAddCategory = (req, res, next) => {
 
 exports.getCategories = (req, res, next) => {
 
-    Category.findAll()
+    Category.find()
         .then(categories => {
             res.render('admin/categories', {
                 title: 'New Category',
@@ -168,11 +182,24 @@ exports.postEditCategory = (req, res, next) => {
     const name = req.body.name;
     const description = req.body.description;
 
-    const category = new Category(name, description, id);
-    category.save()
-        .then(result => {
-            console.log(result);
+    Category.findById(id)
+        .then(category => {
+            category.name = name;
+            category.description = description;
+            return category.save();
+        }).then(() => {
             res.redirect('/admin/categories?action=edit');
+        })
+        .catch(err => console.log(err))
+
+}
+
+exports.postDeleteCategory = (req, res, next) => {
+    const id = req.body.categoryid;
+
+    Category.findByIdAndRemove(id)
+        .then(() => {
+            res.redirect('/admin/categories?ction=delete')
         })
         .catch(err => console.log(err))
 }
