@@ -1,5 +1,6 @@
 const Product = require('./Product');
 const mongoose = require('mongoose');
+const { isEmail } = require('validator');
 
 const userSchema = mongoose.Schema({
     name: {
@@ -8,7 +9,17 @@ const userSchema = mongoose.Schema({
     },
     email: {
         type: String,
+        validate: [isEmail, 'Invalid Email..']
+    },
+    password: {
+        type: String,
         required: true
+    },
+    resetToken: String,
+    resetTokenExpiration: Date,
+    isAdmin: {
+        type: Boolean,
+        default: false
     },
     cart: {
         items: [

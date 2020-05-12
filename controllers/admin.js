@@ -1,8 +1,10 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
+const mongoose = require('mongoose');
 
 exports.getProducts = (req, res, next) => {
-    Product.find()
+    Product
+        .find({ userId: req.user._id })
         .populate('userId', 'name -_id')
         .select('name price imageUrl userId')
         .then(products => {
@@ -14,10 +16,11 @@ exports.getProducts = (req, res, next) => {
                     action: req.query.action
                 });
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.getAddProduct = (req, res, next) => {
+
     res.render('admin/add-product',
         {
             title: 'New Product',
@@ -38,22 +41,67 @@ exports.postAddProduct = (req, res, next) => {
         price: price,
         imageUrl: imageUrl,
         description: description,
-        userId: req.user
+        userId: req.user,
+        isActive: false,
+        tags: ['Téléphone portable']
     });
 
 
     product.save().then(() => {
         res.redirect('/admin/products');
     })
-        .catch(err => console.log(err))
+        .catch(err => {
+
+            if (err.name == 'ValidationError') {
+                let message = '';
+                for (field in err.errors) {
+                    message += err.errors[field].message + '<br>'
+                }
+
+                res.render('admin/add-product',
+                    {
+                        title: 'New Product',
+                        path: '/admin/add-product',
+                        errorMessage: message,
+                        inputs: {
+                            name: name,
+                            price: price,
+                            description: description
+
+                        }
+                    });
+            } else {
+                // res.status(500).render('admin/add-product',
+                //     {
+                //         title: 'New Product',
+                //         path: '/admin/add-product',
+                //         errorMessage: 'An error has occured, please try again!',
+                //         inputs: {
+                //             name: name,
+                //             price: price,
+                //             description: description
+
+                //         }
+                //     });
+
+                // res.redirect('/500')
+                next(err);
+
+            }
+
+
+        })
 
 }
 
 exports.getEditProduct = (req, res, next) => {
 
-    Product.findById(req.params.productid)
+    Product.findOne({ _id: req.params.productid, userId: req.user._id })
         //.populate('categories')
         .then(product => {
+            if (!product) {
+                return res.redirect('/')
+            }
             return product;
         }).then(product => {
 
@@ -84,7 +132,7 @@ exports.getEditProduct = (req, res, next) => {
                         });
                 })
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.postEditProduct = (req, res, next) => {
@@ -96,7 +144,7 @@ exports.postEditProduct = (req, res, next) => {
     const description = req.body.description;
     const ids = req.body.categoryids;
 
-    Product.update({ _id: id }, {
+    Product.update({ _id: id, userId: req.user._id }, {
         $set: {
             name: name,
             price: price,
@@ -108,19 +156,22 @@ exports.postEditProduct = (req, res, next) => {
         .then(() => {
             res.redirect('/admin/products?action=edit');
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 
 }
 
 exports.postDeleteProduct = (req, res, next) => {
     const id = req.body.productid;
 
-    Product.findByIdAndRemove(id)
-        .then(() => {
+    Product.deleteOne({ _id: id, userId: req.user._id })
+        .then((result) => {
+            if (result.deletedCount === 0) {
+                return res.redirect('/');
+            }
             console.log('The product has been deleted');
             res.redirect('/admin/products?action=delete');
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.getAddCategory = (req, res, next) => {
@@ -144,7 +195,7 @@ exports.postAddCategory = (req, res, next) => {
         .then(result => {
             res.redirect('/admin/categories?action=create');
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 }
 
 exports.getCategories = (req, res, next) => {
@@ -158,7 +209,7 @@ exports.getCategories = (req, res, next) => {
                 action: req.query.action
             });
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 
 }
 
@@ -172,7 +223,7 @@ exports.getEditCategory = (req, res, next) => {
                 category: category
             })
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 
 }
 
@@ -190,7 +241,7 @@ exports.postEditCategory = (req, res, next) => {
         }).then(() => {
             res.redirect('/admin/categories?action=edit');
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 
 }
 
@@ -201,5 +252,5 @@ exports.postDeleteCategory = (req, res, next) => {
         .then(() => {
             res.redirect('/admin/categories?ction=delete')
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 }

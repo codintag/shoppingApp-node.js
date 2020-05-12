@@ -21,7 +21,7 @@ exports.getIndex = (req, res, next) => {
                         });
                 });
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.getProducts = (req, res, next) => {
@@ -42,7 +42,7 @@ exports.getProducts = (req, res, next) => {
                         })
                 });
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.getProductsByCategoryId = (req, res, next) => {
@@ -65,7 +65,7 @@ exports.getProductsByCategoryId = (req, res, next) => {
                     selectedCategory: categoryid,
                     path: '/products'
                 });
-        }).catch(err => console.log(err));
+        }).catch(err => next(err));
 
 
 }
@@ -81,7 +81,7 @@ exports.getProduct = (req, res, next) => {
                     path: '/products'
                 });
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 }
 
 exports.getCart = (req, res, next) => {
@@ -98,7 +98,7 @@ exports.getCart = (req, res, next) => {
                     products: user.cart.items
                 });
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 
 
 }
@@ -112,7 +112,7 @@ exports.postCart = (req, res, next) => {
             req.user.addToCart(product);
         })
         .then(() => res.redirect('/cart'))
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.postCartItemDelete = (req, res, next) => {
@@ -122,7 +122,7 @@ exports.postCartItemDelete = (req, res, next) => {
         .deleteCartItem(productid)
         .then(() => {
             res.redirect('/cart')
-        }).catch(err => console.log(err))
+        }).catch(err => next(err))
 }
 
 exports.getOrders = (req, res, next) => {
@@ -137,7 +137,7 @@ exports.getOrders = (req, res, next) => {
             });
 
         })
-        .catch(err => console.log(err));
+        .catch(err => next(err));
 }
 
 exports.postOrder = (req, res, next) => {
@@ -173,5 +173,5 @@ exports.postOrder = (req, res, next) => {
         .then(() => {
             res.redirect('/orders')
         })
-        .catch(err => console.log(err))
+        .catch(err => next(err))
 }
