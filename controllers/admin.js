@@ -1,6 +1,7 @@
 const Product = require('../models/Product');
 const Category = require('../models/Category');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 exports.getProducts = (req, res, next) => {
     Product
@@ -33,13 +34,27 @@ exports.postAddProduct = (req, res, next) => {
 
     const name = req.body.name;
     const price = req.body.price;
-    const imageUrl = req.body.imageUrl;
+    const file = req.file;
     const description = req.body.description;
+
+    if (!file) {
+        return res.render('admin/add-product',
+            {
+                title: 'New Product',
+                path: '/admin/add-product',
+                errorMessage: 'Please choose an image file!',
+                // inputs: {
+                //     name: name,
+                //     price: price,
+                //     description: description
+                // }
+            });
+    }
 
     const product = new Product({
         name: name,
         price: price,
-        imageUrl: imageUrl,
+        imageUrl: file.filename,
         description: description,
         userId: req.user,
         isActive: false,
@@ -140,38 +155,60 @@ exports.postEditProduct = (req, res, next) => {
     const id = req.body.id;
     const name = req.body.name;
     const price = req.body.price;
-    const imageUrl = req.body.imageUrl;
+    const image = req.file;
     const description = req.body.description;
     const ids = req.body.categoryids;
 
-    Product.update({ _id: id, userId: req.user._id }, {
-        $set: {
-            name: name,
-            price: price,
-            imageUrl: imageUrl,
-            description: description,
-            categories: ids
-        }
-    })
-        .then(() => {
+    Product.findOne({ _id: id, userId: req.user._id })
+        .then(product => {
+            if (!product) {
+                return res.redirect('/')
+            }
+            product.name = name;
+            product.price = price;
+            product.description = description;
+            product.categories = ids;
+
+            if (image) {
+
+                fs.unlink('public/img/' + product.imageUrl, err => {
+                    if (err) {
+                        console.log(err);
+                    }
+                });
+
+                product.imageUrl = image.filename;
+            }
+            return product.save();
+        }).then(result => {
             res.redirect('/admin/products?action=edit');
-        })
-        .catch(err => next(err));
+        }).catch(err => next(err));
 
 }
 
 exports.postDeleteProduct = (req, res, next) => {
     const id = req.body.productid;
 
-    Product.deleteOne({ _id: id, userId: req.user._id })
-        .then((result) => {
-            if (result.deletedCount === 0) {
-                return res.redirect('/');
+    Product.findOne({ _id: id, userId: req.user._id })
+        .then(product => {
+            if (!product) {
+                return next(new Error('Deleting product was not found'))
             }
-            console.log('The product has been deleted');
-            res.redirect('/admin/products?action=delete');
-        })
-        .catch(err => next(err));
+            fs.unlink('public/img/' + product.imageUrl, err => {
+                if (err) {
+                    console.log(err);
+                }
+            });
+            return Product.deleteOne({ _id: id, userId: req.user._id })
+                .then((result) => {
+                    if (result.deletedCount === 0) {
+                        return next(new Error('Deleting product was not found'))
+                    }
+                    console.log('The product has been deleted');
+                    res.redirect('/admin/products?action=delete');
+                })
+                .catch(err => next(err));
+        });
 }
 
 exports.getAddCategory = (req, res, next) => {
